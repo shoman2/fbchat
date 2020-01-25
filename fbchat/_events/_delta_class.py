@@ -9,9 +9,10 @@ from typing import Sequence, Optional
 
 @attrs_event
 class PeopleAdded(ThreadEvent):
-    """somebody added people to a group thread."""
+    """People were added to a group thread."""
 
     # TODO: Add message id
+    # TODO: Add snippet/admin text
 
     thread = attr.ib(type="_threads.Group")  # Set the correct type
     #: The people who got added
@@ -28,6 +29,29 @@ class PeopleAdded(ThreadEvent):
             for x in data["addedParticipants"]
         ]
         return cls(author=author, thread=thread, added=added, at=at)
+
+    @classmethod
+    def _from_send(cls, thread: "_threads.Group", added_ids: Sequence[str]):
+        return cls(
+            author=thread.session.user,
+            thread=thread,
+            added=[_threads.User(session=thread.session, id=id_) for id_ in added_ids],
+            at=None,
+        )
+
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.Group", data):
+        return cls(
+            author=_threads.User(
+                session=thread.session, id=data["message_sender"]["id"]
+            ),
+            thread=thread,
+            added=[
+                _threads.User(session=thread.session, id=id_["id"])
+                for id_ in data["participants_added"]
+            ],
+            at=_util.millis_to_datetime(int(data["timestamp_precise"])),
+        )
 
 
 @attrs_event
@@ -47,6 +71,28 @@ class PersonRemoved(ThreadEvent):
         author, thread, at = cls._parse_metadata(session, data)
         removed = _threads.User(session=session, id=data["leftParticipantFbId"])
         return cls(author=author, thread=thread, removed=removed, at=at)
+
+    @classmethod
+    def _from_send(cls, thread: "_threads.Group", removed_id: str):
+        return cls(
+            author=thread.session.user,
+            thread=thread,
+            removed=_threads.User(session=thread.session, id=removed_id),
+            at=None,
+        )
+
+    @classmethod
+    def _from_fetch(cls, thread: "_threads.Group", data):
+        return cls(
+            author=_threads.User(
+                session=thread.session, id=data["message_sender"]["id"]
+            ),
+            thread=thread,
+            removed=_threads.User(
+                session=thread.session, id=data["participants_removed"][0]["id"]
+            ),
+            at=_util.millis_to_datetime(int(data["timestamp_precise"])),
+        )
 
 
 @attrs_event

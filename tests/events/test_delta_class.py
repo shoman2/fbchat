@@ -20,7 +20,7 @@ from fbchat import (
 from fbchat._events import parse_delta
 
 
-def test_people_added(session):
+def test_people_added_listen(session):
     data = {
         "addedParticipants": [
             {
@@ -61,7 +61,51 @@ def test_people_added(session):
     ) == parse_delta(session, data)
 
 
-def test_person_removed(session):
+def test_people_added_send(session):
+    thread = Group(session=session, id="4321")
+    assert PeopleAdded(
+        author=session.user,
+        thread=thread,
+        added=[User(session=session, id="1234")],
+        at=None,
+    ) == PeopleAdded._from_send(thread, ["1234"])
+
+
+def test_people_added_fetch(session):
+    data = {
+        "__typename": "ParticipantsAddedMessage",
+        "message_id": "mid.$XYZ",
+        "offline_threading_id": "1122334455",
+        "message_sender": {"id": "3456", "email": "3456@facebook.com"},
+        "ttl": 0,
+        "timestamp_precise": "1500000000000",
+        "unread": False,
+        "is_sponsored": False,
+        "ad_id": None,
+        "ad_client_token": None,
+        "commerce_message_type": None,
+        "customizations": [],
+        "tags_list": ["inbox", "tq", "blindly_apply_message_folder", "source:web"],
+        "platform_xmd_encoded": None,
+        "message_source_data": None,
+        "montage_reply_data": None,
+        "message_reactions": [],
+        "unsent_timestamp_precise": "0",
+        "message_unsendability_status": "deny_for_non_sender",
+        "participants_added": [{"id": "1234"}],
+        "snippet": "A contact added Abc Def to the group.",
+        "replied_to_message": None,
+    }
+    thread = Group(session=session, id="4321")
+    assert PeopleAdded(
+        author=User(session=session, id="3456"),
+        thread=thread,
+        added=[User(session=session, id="1234")],
+        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
+    ) == PeopleAdded._from_fetch(thread, data)
+
+
+def test_person_removed_listen(session):
     data = {
         "irisSeqId": "11223344",
         "irisTags": ["DeltaParticipantLeftGroupThread", "is_from_iris_fanout"],
@@ -90,6 +134,56 @@ def test_person_removed(session):
         removed=User(session=session, id="1234"),
         at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
     ) == parse_delta(session, data)
+
+
+def test_person_removed_send(session):
+    thread = Group(session=session, id="4321")
+    assert PersonRemoved(
+        author=session.user,
+        thread=thread,
+        removed=User(session=session, id="1234"),
+        at=None,
+    ) == PersonRemoved._from_send(thread, "1234")
+
+
+def test_person_removed_fetch(session):
+    data = {
+        "__typename": "ParticipantLeftMessage",
+        "message_id": "mid.$XYZ",
+        "offline_threading_id": "1122334455",
+        "message_sender": {"id": "3456", "email": "3456@facebook.com"},
+        "ttl": 0,
+        "timestamp_precise": "1500000000000",
+        "unread": False,
+        "is_sponsored": False,
+        "ad_id": None,
+        "ad_client_token": None,
+        "commerce_message_type": None,
+        "customizations": [],
+        "tags_list": [
+            "inbox",
+            "tq",
+            "blindly_apply_message_folder",
+            "filtered_content",
+            "filtered_content_account",
+        ],
+        "platform_xmd_encoded": None,
+        "message_source_data": None,
+        "montage_reply_data": None,
+        "message_reactions": [],
+        "unsent_timestamp_precise": "0",
+        "message_unsendability_status": "deny_for_non_sender",
+        "participants_removed": [{"id": "1234"}],
+        "snippet": "A contact removed Abc Def from the group.",
+        "replied_to_message": None,
+    }
+    thread = Group(session=session, id="4321")
+    assert PersonRemoved(
+        author=User(session=session, id="3456"),
+        thread=thread,
+        removed=User(session=session, id="1234"),
+        at=datetime.datetime(2017, 7, 14, 2, 40, tzinfo=datetime.timezone.utc),
+    ) == PersonRemoved._from_fetch(thread, data)
 
 
 def test_title_set(session):

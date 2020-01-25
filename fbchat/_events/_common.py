@@ -1,5 +1,4 @@
 import attr
-import abc
 from .._common import kw_only
 from .. import _exception, _util, _threads
 
@@ -10,13 +9,8 @@ attrs_event = attr.s(slots=True, kw_only=kw_only, frozen=True)
 
 
 @attrs_event
-class Event(metaclass=abc.ABCMeta):
+class Event:
     """Base class for all events."""
-
-    @classmethod
-    @abc.abstractmethod
-    def _parse(cls, session, data):
-        raise NotImplementedError
 
     @staticmethod
     def _get_thread(session, data):
