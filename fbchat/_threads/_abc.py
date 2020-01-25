@@ -522,7 +522,7 @@ class ThreadABC(metaclass=abc.ABCMeta):
     #         _graphql.from_doc_id("1768656253222505", {"data": data})
     #     )
 
-    def set_emoji(self, emoji: Optional[str]):
+    def set_emoji(self, emoji: Optional[str]) -> _events.EmojiSet:
         """Change thread emoji.
 
         Args:
@@ -538,6 +538,9 @@ class ThreadABC(metaclass=abc.ABCMeta):
         # different requests, though only this one is required to make the change.
         j = self.session._payload_post(
             "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
+        )
+        return _events.EmojiSet(
+            author=self.session.user, thread=self._copy(), emoji=emoji, at=None
         )
 
     def forward_attachment(self, attachment_id: str):

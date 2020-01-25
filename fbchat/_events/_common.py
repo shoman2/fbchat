@@ -54,3 +54,9 @@ class ThreadEvent(Event):
         thread = cls._get_thread(session, metadata)
         at = _util.millis_to_datetime(int(metadata["timestamp"]))
         return author, thread, at
+
+    @classmethod
+    def _parse_fetch(cls, session, data):
+        author = _threads.User(session=session, id=data["message_sender"]["id"])
+        at = _util.millis_to_datetime(int(data["timestamp_precise"]))
+        return author, at
